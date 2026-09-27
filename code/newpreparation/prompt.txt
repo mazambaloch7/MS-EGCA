@@ -1,0 +1,1359 @@
+You are an expert Q1-journal deep learning research engineer, PyTorch developer, computer vision scientist, and reproducible research code writer.
+
+Your task is to write a COMPLETE, EXECUTABLE, SINGLE-CELL Jupyter Notebook code in Python + PyTorch for a Q1-level research experiment.
+
+The code must be written for a local Windows machine using AMD Radeon GPU through PyTorch DirectML.
+
+This is NOT a Kaggle CUDA notebook.
+This is NOT a toy experiment.
+This code must generate real experimental results and save all results in research-paper-ready format.
+
+============================================================
+PROJECT TITLE
+============================================================
+
+MilGraph-CalibNet:
+Graph-Guided Calibration-Aware Fine-Grained Military Vehicle Classification Using Foundation Visual Features
+
+============================================================
+PRIMARY RESEARCH AIM
+============================================================
+
+Develop, train, evaluate, and report a Q1-level fine-grained military vehicle classification framework using:
+
+1. CNN baselines
+2. Transformer baselines
+3. Foundation visual models
+4. Graph Neural Network / Graph Attention Network
+5. Multi-scale feature fusion
+6. Discriminative patch attention
+7. Calibration-aware focal contrastive loss
+8. Robustness analysis
+9. Calibration analysis
+10. Explainability
+11. Statistical significance testing
+12. Reproducible consolidated output files for paper writing
+
+The final output must help write a full Q1 journal paper later.
+
+============================================================
+TARGET JOURNAL STANDARD
+============================================================
+
+The code must be designed according to the experimental expectations of high-quality Q1 journals such as:
+
+Primary target:
+- Pattern Recognition
+
+Secondary targets:
+- Neural Networks
+- Engineering Applications of Artificial Intelligence
+- Expert Systems with Applications
+
+Optional remote-sensing rigor:
+- IEEE Transactions on Geoscience and Remote Sensing
+- ISPRS Journal of Photogrammetry and Remote Sensing
+- IEEE JSTARS
+
+Therefore, the experiment must include:
+- strong baseline comparison
+- proposed method
+- module-level ablation
+- calibration study
+- robustness study
+- statistical testing
+- explainability
+- efficiency/deployment analysis
+- reproducibility checklist
+- honest limitations
+- failure logging
+- consolidated results for paper writing
+
+============================================================
+DATASET
+============================================================
+
+Dataset name:
+Military Vehicles Dataset
+
+Dataset source:
+Kaggle dataset:
+https://www.kaggle.com/datasets/amanrajbose/millitary-vechiles
+
+The dataset has multiple military vehicle classes and should be detected automatically.
+
+The code must assume that the dataset has already been downloaded and extracted locally.
+
+Support these dataset paths:
+1. ./data/
+2. ./dataset/
+3. ./millitary-vechiles/
+4. ./military-vehicles/
+5. D:/datasets/millitary-vechiles/
+6. D:/datasets/military-vehicles/
+7. A user-editable DATA_ROOT variable at the top
+
+Do not hard-code class names.
+Detect class folders automatically.
+
+Valid image extensions:
+.jpg, .jpeg, .png, .bmp, .webp
+
+============================================================
+BACKEND REQUIREMENT: DIRECTML
+============================================================
+
+This notebook must run on AMD Radeon GPU using torch-directml.
+
+Use:
+
+try:
+    import torch_directml
+    device = torch_directml.device()
+    BACKEND = "DirectML"
+except Exception:
+    device = torch.device("cpu")
+    BACKEND = "CPU fallback"
+
+Do NOT use:
+- torch.cuda
+- torch.cuda.amp
+- CUDA
+- torch.compile
+- torch_geometric
+- NVIDIA-specific memory functions
+- fake results
+- simulated metrics
+- placeholder tables
+- TODO placeholders
+
+The code must print:
+- Python version
+- PyTorch version
+- torch-directml availability
+- backend name
+- device name if available
+- CPU fallback warning if DirectML is unavailable
+
+Important DirectML restrictions:
+- do not use CUDA AMP
+- do not use torch.cuda.amp
+- do not use CUDA memory reporting
+- use float32
+- use NUM_WORKERS = 0 by default for Windows stability
+- use pin_memory = False
+- avoid sparse tensor operations
+- avoid torch_geometric
+- avoid unstable backend-specific operations
+- if a DirectML operation fails, catch error and use CPU fallback for that stage or model
+- log all DirectML limitations in the final report
+
+============================================================
+INSTALLATION COMMENTS
+============================================================
+
+At the top of the code, include comments for recommended installation:
+
+pip install torch-directml
+pip install timm scikit-learn pandas numpy matplotlib seaborn scipy pillow tqdm reportlab fpdf2 opencv-python-headless
+
+Do not force upgrade to latest PyTorch.
+Do not install CUDA PyTorch.
+Do not install torch-geometric.
+
+If packages are missing:
+- try installing lightweight packages quietly
+- if installation fails, record warning
+- continue with fallback wherever possible
+
+============================================================
+GLOBAL CONFIGURATION
+============================================================
+
+At the beginning of the code, create this CONFIG dictionary:
+
+CONFIG = {
+    "PROJECT_NAME": "MilGraph-CalibNet-DirectML",
+    "RESEARCH_TITLE": "MilGraph-CalibNet: Graph-Guided Calibration-Aware Fine-Grained Military Vehicle Classification Using Foundation Visual Features",
+    "SEED": 42,
+
+    "DATA_ROOT": "./data",
+    "AUTO_FIND_DATASET": True,
+
+    "IMG_SIZE": 224,
+    "TRAIN_RATIO": 0.70,
+    "VAL_RATIO": 0.15,
+    "TEST_RATIO": 0.15,
+
+    "BATCH_SIZE": 8,
+    "MIN_BATCH_SIZE": 2,
+    "NUM_WORKERS": 0,
+
+    "BASELINE_EPOCHS": 20,
+    "PROPOSED_EPOCHS": 30,
+    "QUICK_TEST": False,
+    "QUICK_TEST_EPOCHS": 1,
+    "QUICK_TEST_MODELS": 2,
+
+    "LR": 1e-4,
+    "BACKBONE_LR": 1e-5,
+    "HEAD_LR": 1e-4,
+    "WEIGHT_DECAY": 1e-4,
+    "PATIENCE": 6,
+
+    "USE_DIRECTML": True,
+    "USE_AMP": False,
+    "USE_SAM": False,
+    "USE_EMA": True,
+    "USE_MIXUP": True,
+    "USE_CUTMIX": True,
+    "USE_RANDAUGMENT": True,
+    "USE_LABEL_SMOOTHING": True,
+
+    "SAVE_CHECKPOINTS": True,
+    "RESUME_IF_AVAILABLE": True,
+
+    "KNN_K": 6,
+    "MAX_PATCH_TOKENS": 196,
+    "GAT_HEADS": 4,
+    "GAT_LAYERS": 2,
+    "EMBED_DIM": 384,
+    "DROPOUT": 0.2,
+
+    "LAMBDA_FOCAL": 0.5,
+    "LAMBDA_CONTRASTIVE": 0.1,
+    "LAMBDA_CALIBRATION": 0.05,
+
+    "ROBUSTNESS_EVAL_ALL_MODELS": False,
+    "ROBUSTNESS_EVAL_BEST_AND_PROPOSED": True,
+
+    "OUTPUT_DIR": "./MilGraph_CalibNet_DirectML_Outputs"
+}
+
+If QUICK_TEST=True:
+- train only 2 models
+- run 1 epoch
+- still generate all required output files using real quick-test values
+- clearly mark quick-test mode in all reports
+
+If QUICK_TEST=False:
+- run full model list
+
+============================================================
+REPRODUCIBILITY
+============================================================
+
+Implement set_seed(seed).
+
+Seed:
+- random
+- numpy
+- torch
+
+Set:
+torch.backends.cudnn.benchmark = False if CUDA is not used
+Do not use CUDA-specific deterministic settings.
+
+Save reproducibility information to:
+
+logs/reproducibility.txt
+
+Include:
+- timestamp
+- OS
+- Python version
+- PyTorch version
+- torchvision version
+- timm version if available
+- torch-directml availability
+- backend used
+- seed
+- config dictionary
+- package availability
+- dataset path
+- number of classes
+- number of images
+- split ratios
+
+============================================================
+OUTPUT DIRECTORY STRUCTURE
+============================================================
+
+Create:
+
+./MilGraph_CalibNet_DirectML_Outputs/
+
+Subfolders:
+- figures/
+- tables/
+- checkpoints/
+- logs/
+- reports/
+- predictions/
+- explainability/
+- robustness/
+
+Final main files:
+1. ALL_RESULTS_CONSOLIDATED.txt
+2. ALL_RESULTS_CONSOLIDATED.pdf
+3. ALL_RESULTS_CONSOLIDATED.json
+4. ALL_RESULTS_CONSOLIDATED.csv
+5. MilGraph_CalibNet_DirectML_Complete_Output.zip
+
+============================================================
+SECTION 1: DATASET DISCOVERY
+============================================================
+
+Automatically find the dataset folder.
+
+If CONFIG["AUTO_FIND_DATASET"] is True:
+- search the supported local paths
+- recursively inspect folders
+- identify likely classification dataset root where subfolders contain image files
+
+Perform:
+1. class folder detection
+2. image path collection
+3. label assignment
+4. unreadable/corrupted image check using PIL
+5. duplicate check using md5 hash if feasible
+6. class distribution analysis
+7. save dataset inventory
+
+Save:
+tables/dataset_inventory.csv
+
+Columns:
+image_path,class_name,class_index,width,height,file_size,status,hash_if_available
+
+If corrupted images exist:
+- remove them from usable dataset
+- log them in:
+tables/corrupted_images.csv
+
+If duplicate images exist:
+- log them in:
+tables/duplicate_images.csv
+- do not automatically delete unless safe
+- record duplicate count in final report
+
+============================================================
+SECTION 2: TRAIN/VAL/TEST SPLIT
+============================================================
+
+Use stratified splitting.
+
+Default:
+70% training
+15% validation
+15% testing
+
+Save:
+- tables/train_split.csv
+- tables/val_split.csv
+- tables/test_split.csv
+- tables/all_split.csv
+
+Columns:
+image_path,class_name,class_index,split
+
+Generate:
+- T1_dataset_description.csv
+
+Columns:
+Partition,Class,Images,Percentage
+
+Figures:
+1. fig01_dataset_class_distribution.png
+2. fig02_train_val_test_distribution.png
+3. fig03_sample_images_grid.png
+
+Figures must be:
+- 300 DPI
+- publication quality
+- readable labels
+- journal-ready
+- not overcrowded
+
+============================================================
+SECTION 3: DATASET CLASS
+============================================================
+
+Implement:
+
+MilitaryVehicleDataset
+
+It must:
+- accept a dataframe
+- read image path
+- convert image to RGB
+- apply transform
+- return image tensor, label, path
+
+Training transforms:
+- RandomResizedCrop
+- RandomHorizontalFlip
+- ColorJitter
+- RandAugment if available
+- RandomErasing
+- Normalize with ImageNet mean/std
+
+Validation/test transforms:
+- Resize
+- CenterCrop
+- Normalize with ImageNet mean/std
+
+Use:
+pin_memory=False
+persistent_workers=False
+num_workers=0
+
+Implement auto batch-size reducer:
+If training fails due to memory:
+- reduce batch size from 8 to 4
+- then 2
+- record this in DirectML compatibility table
+- continue if possible
+
+============================================================
+SECTION 4: AUGMENTATION
+============================================================
+
+Implement:
+- MixUp
+- CutMix
+- label smoothing
+- option to turn them off
+
+MixUp/CutMix must support soft labels.
+Loss functions must handle soft labels.
+
+If MixUp/CutMix creates backend error:
+- disable it safely
+- log warning
+- continue
+
+============================================================
+SECTION 5: MODEL REGISTRY
+============================================================
+
+Implement a clear model registry.
+
+The full model list must include:
+
+A. CNN baselines:
+1. ResNet-50
+2. DenseNet-121
+3. MobileNetV3-Large
+4. EfficientNetV2-S
+5. ConvNeXt-Tiny
+6. ConvNeXtV2-Tiny if available
+
+B. Transformer baselines:
+7. ViT-B/16
+8. DeiT-Small if available
+9. Swin-T
+10. SwinV2-T if available
+11. MaxViT-Tiny if available
+
+C. Foundation/self-supervised/vision-language baselines:
+12. DINOv2 ViT-S/14 linear probe if available
+13. DINOv2 ViT-S/14 fine-tune if available
+14. CLIP ViT-B/16 feature extractor + classifier if available
+15. SigLIP feature extractor + classifier if available
+
+D. Classical feature baseline:
+16. DINOv2 or ConvNeXt features + Random Forest if feasible
+17. DINOv2 or ConvNeXt features + SVM if feasible
+
+E. Proposed model:
+18. MilGraph-CalibNet Full
+
+F. Ablation variants:
+19. MilGraph-CalibNet without GNN/GAT
+20. MilGraph-CalibNet without calibration loss
+21. MilGraph-CalibNet without contrastive loss
+22. MilGraph-CalibNet without multi-scale fusion
+23. MilGraph-CalibNet without patch attention
+24. MilGraph-CalibNet backbone only
+25. MilGraph-CalibNet GNN only head
+
+For DirectML full run, use a practical model set:
+- ResNet-50
+- DenseNet-121
+- MobileNetV3-Large
+- EfficientNetV2-S
+- ConvNeXt-Tiny
+- ViT-B/16
+- Swin-T
+- DINOv2 or fallback model
+- CLIP/SigLIP or fallback model
+- MilGraph-CalibNet Full
+- 5 ablations
+
+If any model is unavailable:
+- use closest timm fallback
+- record the exact fallback
+- do not stop
+
+============================================================
+SECTION 6: BASELINE MODEL IMPLEMENTATION
+============================================================
+
+Use timm.create_model where possible.
+
+Implement:
+
+create_timm_model(model_name, num_classes, pretrained=True, freeze_backbone=False)
+
+Requirements:
+- replace final classifier head
+- support pretrained=True
+- if pretrained weights unavailable, fallback to pretrained=False
+- support linear probe
+- support full fine-tuning
+- record model category:
+  CNN / Transformer / Foundation / Proposed / Ablation / Classical
+
+Implement:
+count_parameters(model)
+estimate_model_size_mb(model)
+measure_latency(model, dataloader, device)
+compute_inference_fps(model, dataloader, device)
+
+Do not use CUDA memory functions.
+
+============================================================
+SECTION 7: PROPOSED MODEL ARCHITECTURE
+============================================================
+
+Implement MilGraph-CalibNet in pure PyTorch.
+
+Do NOT use torch_geometric.
+
+Architecture:
+
+Input RGB image
+→ CNN/Foundation backbone
+→ patch/token feature extraction
+→ kNN graph construction from patch embeddings
+→ Graph Attention Network / MPGR module
+→ multi-scale feature fusion
+→ discriminative patch attention pooling
+→ prototype contrastive classifier
+→ calibrated prediction
+
+Main architecture classes:
+
+1. PatchFeatureExtractor
+2. KNNGraphBuilder
+3. GraphAttentionLayer
+4. MPGR
+5. MultiScaleFusion
+6. DiscriminativePatchAttention
+7. PrototypeContrastiveHead
+8. MilGraphCalibNet
+
+Detailed design:
+
+PatchFeatureExtractor:
+- use ConvNeXt/ConvNeXtV2/DINOv2-like backbone where available
+- extract patch-level tokens
+- if backbone output is B,C,H,W, convert to B,N,C
+- if backbone output is B,N,C, use directly
+- reduce token dimension to CONFIG["EMBED_DIM"]
+- limit tokens to CONFIG["MAX_PATCH_TOKENS"]
+
+KNNGraphBuilder:
+- input patch tokens B,N,C
+- normalize tokens
+- compute cosine similarity matrix B,N,N
+- select top-k neighbors
+- k = CONFIG["KNN_K"]
+- avoid sparse tensors
+- return neighbor indices and similarity weights
+- if DirectML fails, build kNN on CPU and return indices to device
+
+GraphAttentionLayer:
+- multi-head graph attention over kNN neighbors
+- no torch_geometric
+- use gather/indexing carefully
+- compute attention scores for center node and neighbor nodes
+- apply softmax over neighbor dimension
+- aggregate neighbor features
+- residual connection
+- dropout
+- layer normalization
+- return updated node features and attention weights
+
+MPGR:
+Military Patch Graph Reasoning module:
+- stack 1 or 2 GraphAttentionLayer blocks
+- output relation-aware patch tokens
+- save graph attention weights for visualization
+
+DiscriminativePatchAttention:
+- learn patch importance scores
+- compute attention-weighted feature
+- return pooled feature and attention map
+- attention map must be visualizable as patch heatmap
+
+MultiScaleFusion:
+- fuse:
+  global average pooled features
+  graph pooled features
+  attention pooled features
+  optional backbone-level pooled feature
+- use MLP + LayerNorm + dropout
+- output fused representation
+
+PrototypeContrastiveHead:
+- learn one prototype per class
+- normalize features and prototypes
+- compute cosine-similarity logits with learnable temperature
+- return logits and embeddings
+
+MilGraphCalibNet:
+- flags:
+  use_gnn=True/False
+  use_calibration_loss=True/False
+  use_contrastive_loss=True/False
+  use_multiscale=True/False
+  use_patch_attention=True/False
+  use_prototype_head=True/False
+
+Forward output must be a dictionary:
+
+{
+    "logits": logits,
+    "features": features,
+    "patch_tokens": patch_tokens,
+    "patch_attention": patch_attention,
+    "graph_attention": graph_attention
+}
+
+============================================================
+SECTION 8: LOSS FUNCTIONS
+============================================================
+
+Implement these losses:
+
+1. SoftTargetCrossEntropy
+2. CrossEntropyLoss with label smoothing
+3. FocalLoss
+4. SupervisedContrastiveLoss
+5. PrototypeContrastiveLoss
+6. BrierLoss
+7. CalibrationRegularizationLoss
+8. CFRL
+
+CFRL:
+Calibration-aware Focal Regularization Loss
+
+Formula:
+
+Total Loss =
+CrossEntropy
++ lambda_focal * FocalLoss
++ lambda_contrastive * ContrastiveLoss
++ lambda_calibration * BrierLoss
+
+Default:
+lambda_focal = 0.5
+lambda_contrastive = 0.1
+lambda_calibration = 0.05
+
+Loss must:
+- support hard labels
+- support soft labels from MixUp/CutMix
+- work with model output dictionary
+- handle missing features gracefully
+- disable components for ablations
+
+Ablation mapping:
+- without GNN: use_gnn=False
+- without calibration loss: lambda_calibration=0
+- without contrastive loss: lambda_contrastive=0
+- without multi-scale fusion: use_multiscale=False
+- without patch attention: use_patch_attention=False
+- backbone only: disable GNN, patch attention, multiscale, prototype head
+
+============================================================
+SECTION 9: OPTIMIZER AND SCHEDULER
+============================================================
+
+Use DirectML-safe optimizer setup.
+
+Implement:
+- AdamW optimizer
+- cosine learning-rate schedule
+- warmup schedule
+- gradient clipping
+- early stopping
+- checkpoint saving
+- resume from checkpoint
+- EMA if stable
+
+Do not use CUDA AMP.
+Do not use SAM by default on DirectML.
+
+If SAM is requested:
+- implement optional SAM wrapper
+- run only if stable
+- if fails, fallback to AdamW
+- log warning
+
+Parameter groups:
+- backbone parameters with lower LR
+- head/GNN/classifier parameters with higher LR
+
+Example:
+backbone_lr = 1e-5
+head_lr = 1e-4
+
+============================================================
+SECTION 10: TRAINING LOOP
+============================================================
+
+Implement functions:
+
+train_one_epoch(model, loader, optimizer, scheduler, criterion, device, epoch, config)
+validate_one_epoch(model, loader, criterion, device, config)
+fit_model(model_name, model, loaders, config, loss_config)
+save_checkpoint()
+load_checkpoint_if_available()
+evaluate_model()
+
+Training loop must record:
+- epoch
+- train loss
+- val loss
+- train accuracy
+- val accuracy
+- train macro-F1
+- val macro-F1
+- learning rate
+- epoch time
+- best epoch
+
+Save logs:
+logs/training_log_ALL.csv
+logs/training_log_MODELNAME.csv
+
+Checkpoint:
+checkpoints/MODELNAME_best.pth
+
+Resume:
+If checkpoint exists and RESUME_IF_AVAILABLE=True:
+- load checkpoint
+- continue or skip already completed model
+- record resume status
+
+Early stopping:
+Monitor validation macro-F1.
+If no improvement for PATIENCE epochs, stop.
+
+============================================================
+SECTION 11: EVALUATION METRICS
+============================================================
+
+Evaluate every successful model on the same test set.
+
+Classification metrics:
+- Accuracy
+- Macro Precision
+- Macro Recall
+- Macro F1
+- Weighted F1
+- per-class precision
+- per-class recall
+- per-class F1
+- support
+
+Discrimination metrics:
+- One-vs-Rest ROC-AUC
+- PR-AUC
+
+Calibration metrics:
+- Expected Calibration Error, ECE
+- Maximum Calibration Error, MCE
+- Brier Score
+- Negative Log Likelihood, NLL
+- confidence histogram
+- reliability diagram
+- optional temperature scaling ECE
+
+Efficiency metrics:
+- parameter count
+- model size MB
+- latency ms/image
+- FPS
+- train time minutes
+- inference time seconds
+- backend used
+- batch size used
+
+Error analysis:
+- confusion matrix
+- top confused class pairs
+- most confident correct predictions
+- most confident wrong predictions
+- low-confidence correct predictions
+
+Save predictions:
+predictions/MODELNAME_predictions.csv
+
+Columns:
+image_path,true_label,true_class,pred_label,pred_class,confidence,correct,probabilities_json
+
+============================================================
+SECTION 12: CALIBRATION ANALYSIS
+============================================================
+
+Implement:
+compute_ece()
+compute_mce()
+compute_brier_score()
+compute_nll()
+temperature_scaling_if_possible()
+
+Generate:
+fig13_calibration_reliability_diagram.png
+fig14_ece_brier_comparison.png
+confidence_histogram_best_model.png
+
+Calibration table:
+T8_calibration_results.csv
+
+Columns:
+Model,ECE,MCE,Brier,NLL,Temperature_Scaling_ECE,Mean_Confidence,Accuracy,Calibration_Gap
+
+============================================================
+SECTION 13: ROBUSTNESS ANALYSIS
+============================================================
+
+Evaluate robustness on corrupted test images.
+
+Corruptions:
+1. clean
+2. gaussian_noise_0.05
+3. gaussian_noise_0.10
+4. gaussian_noise_0.20
+5. motion_blur_k3
+6. motion_blur_k5
+7. brightness_0.5
+8. brightness_1.5
+9. occlusion_10
+10. occlusion_20
+11. occlusion_30
+12. salt_pepper_noise
+13. jpeg_quality_50
+14. jpeg_quality_25
+15. low_resolution_downsampling
+
+At minimum evaluate:
+- best CNN baseline
+- best Transformer/foundation baseline if available
+- MilGraph-CalibNet Full
+- all MilGraph-CalibNet ablations
+
+If time allows, evaluate all successful models.
+
+Save:
+T9_robustness_results.csv
+
+Columns:
+Perturbation,Model,Accuracy,Macro_F1,Accuracy_Drop,Macro_F1_Drop
+
+Generate:
+fig15_robustness_heatmap.png
+
+============================================================
+SECTION 14: STATISTICAL TESTING
+============================================================
+
+Implement:
+1. bootstrap 95% confidence interval for accuracy
+2. bootstrap 95% confidence interval for macro-F1
+3. McNemar test between best baseline and proposed full model
+4. Friedman test across models if enough models
+5. Nemenyi post-hoc if possible
+6. effect size
+
+Save:
+T10_statistical_tests.csv
+
+Columns:
+Test,Comparison,Statistic,p_value,Conclusion,Effect_Size
+
+If a test cannot be performed:
+- record why
+- do not fail
+
+============================================================
+SECTION 15: EXPLAINABILITY
+============================================================
+
+Generate paper-ready explainability figures.
+
+Methods:
+1. Grad-CAM or activation map for CNN/ConvNeXt model
+2. attention rollout if transformer supports it
+3. patch attention visualization for MilGraph-CalibNet
+4. graph node attention visualization for MilGraph-CalibNet
+5. correct prediction example
+6. misclassification example
+7. top confused class pair example
+
+If Grad-CAM fails:
+- use activation map fallback
+- use simple saliency fallback
+- record warning
+
+Save:
+fig18_gradcam_examples.png
+fig19_graph_attention_visualization.png
+fig20_correct_vs_wrong_explainability.png
+
+Explainability should show whether model focuses on:
+- turret
+- cannon
+- track
+- wheel
+- armor body
+- launcher
+- truck body
+- front/rear structure
+
+============================================================
+SECTION 16: FIGURES
+============================================================
+
+Save all figures to:
+
+figures/
+
+Required figures:
+
+1. fig01_dataset_class_distribution.png
+2. fig02_train_val_test_distribution.png
+3. fig03_sample_images_grid.png
+4. fig04_methodology_pipeline.png
+5. fig05_milgraph_calibnet_architecture.png
+6. fig06_training_accuracy_curves.png
+7. fig07_training_loss_curves.png
+8. fig08_confusion_matrix_best_model.png
+9. fig09_model_accuracy_comparison.png
+10. fig10_macro_f1_comparison.png
+11. fig11_roc_curves_ovr.png
+12. fig12_pr_curves_ovr.png
+13. fig13_calibration_reliability_diagram.png
+14. fig14_ece_brier_comparison.png
+15. fig15_robustness_heatmap.png
+16. fig16_efficiency_scatter_accuracy_vs_latency.png
+17. fig17_ablation_study.png
+18. fig18_gradcam_examples.png
+19. fig19_graph_attention_visualization.png
+20. fig20_correct_vs_wrong_explainability.png
+21. fig21_model_ranking_radar_or_bar.png
+22. fig22_error_analysis_top_confusions.png
+
+Figure requirements:
+- 300 DPI
+- clean journal style
+- readable axis labels
+- readable legends
+- no fake values
+- no overcrowded plots
+- save as PNG
+- optionally save as PDF
+
+For methodology and architecture diagrams:
+- use matplotlib patches/text
+- no external drawing tools required
+- create clear block diagrams
+
+============================================================
+SECTION 17: TABLES
+============================================================
+
+Save all tables to:
+
+tables/
+
+Required tables:
+
+T1_dataset_description.csv
+T2_hyperparameters.csv
+T3_architecture_config.csv
+T4_main_results_comparison.csv
+T5_per_class_performance.csv
+T6_ablation_study.csv
+T7_efficiency_comparison.csv
+T8_calibration_results.csv
+T9_robustness_results.csv
+T10_statistical_tests.csv
+T11_error_analysis.csv
+T12_model_failures_or_warnings.csv
+T13_suggested_improvements.csv
+T14_directml_compatibility_report.csv
+T15_reproducibility_checklist.csv
+T16_journal_alignment_checklist.csv
+T17_training_time_summary.csv
+T18_model_ranking_summary.csv
+T19_best_model_summary.csv
+
+T2_hyperparameters.csv columns:
+Parameter,Value,Rationale
+
+T3_architecture_config.csv columns:
+Component,Configuration,Output,Novelty_Reason
+
+T4_main_results_comparison.csv columns:
+Rank,Model,Category,Accuracy,Macro_Precision,Macro_Recall,Macro_F1,Weighted_F1,ROC_AUC_OVR,PR_AUC,ECE,MCE,Brier,NLL,Params_M,Size_MB,Latency_ms,FPS,Train_Time_Min,Backend,Status
+
+T6_ablation_study.csv columns:
+Variant,GNN,Calibration_Loss,Contrastive_Loss,MultiScale_Fusion,Patch_Attention,Accuracy,Macro_F1,ECE,Brier,Delta_Accuracy,Delta_Macro_F1
+
+T14_directml_compatibility_report.csv columns:
+Item,Status,Details,Resolution
+
+T16_journal_alignment_checklist.csv columns:
+Requirement,Pattern_Recognition,Neural_Networks,Engineering_Applications_AI,TGRS_Rigor,Implemented,Evidence_File
+
+============================================================
+SECTION 18: MODEL RANKING
+============================================================
+
+Rank models by:
+1. Macro-F1
+2. Accuracy
+3. ECE lower is better
+4. Robustness average accuracy
+5. Latency lower is better
+
+Create:
+T18_model_ranking_summary.csv
+
+Columns:
+Rank,Model,Accuracy,Macro_F1,ECE,Robustness_Avg_Accuracy,Latency_ms,Overall_Comment
+
+Best model selection:
+- select best overall model using Macro-F1 primary
+- if proposed model is not best, report honestly
+- do not fake superiority
+- discuss where proposed model is better, e.g., calibration, robustness, explainability
+
+============================================================
+SECTION 19: CONSOLIDATED TXT OUTPUT
+============================================================
+
+Create:
+
+ALL_RESULTS_CONSOLIDATED.txt
+
+This file is very important because it will be used later to write the full research paper.
+
+Use exact marker-based structure:
+
+# ALL_RESULTS_CONSOLIDATED
+# Source: MilGraph-CalibNet DirectML 10-class military vehicle classification
+# Dataset: Kaggle amanrajbose/millitary-vechiles, downloaded locally
+# Backend: DirectML / AMD Radeon GPU
+# Target journals: Pattern Recognition, Neural Networks, Engineering Applications of AI, optional TGRS rigor
+# Generated: current timestamp
+# Format: [TABLE: ID Name] followed by CSV content
+# Important: All numeric values are generated from real training/evaluation. Failed/unavailable models are recorded explicitly.
+
+[TABLE: T1 Dataset]
+Partition,Class,Images,Percentage
+
+[TABLE: T2 Hyperparameters]
+Parameter,Value,Rationale
+
+[TABLE: T3 Architecture]
+Component,Configuration,Output,Novelty_Reason
+
+[TABLE: T4 Main Results]
+Rank,Model,Category,Accuracy,Macro_Precision,Macro_Recall,Macro_F1,Weighted_F1,ROC_AUC_OVR,PR_AUC,ECE,MCE,Brier,NLL,Params_M,Size_MB,Latency_ms,FPS,Train_Time_Min,Backend,Status
+
+[TABLE: T5 Per Class Performance]
+Model,Class,Precision,Recall,F1,Support
+
+[TABLE: T6 Ablation Study]
+Variant,GNN,Calibration_Loss,Contrastive_Loss,MultiScale_Fusion,Patch_Attention,Accuracy,Macro_F1,ECE,Brier,Delta_Accuracy,Delta_Macro_F1
+
+[TABLE: T7 Efficiency]
+Model,Params_M,Size_MB,Latency_ms,FPS,Train_Time_Min,Epochs,Backend
+
+[TABLE: T8 Calibration]
+Model,ECE,MCE,Brier,NLL,Temperature_Scaling_ECE,Mean_Confidence,Accuracy,Calibration_Gap
+
+[TABLE: T9 Robustness]
+Perturbation,Model,Accuracy,Macro_F1,Accuracy_Drop,Macro_F1_Drop
+
+[TABLE: T10 Statistical Tests]
+Test,Comparison,Statistic,p_value,Conclusion,Effect_Size
+
+[TABLE: T11 Error Analysis]
+Model,True_Class,Predicted_Class,Count,Error_Type
+
+[TABLE: T12 Model Failures or Warnings]
+Model,Stage,Error_or_Warning,Resolution
+
+[TABLE: T13 Suggested Improvements]
+Priority,Category,Improvement,Expected_Gain,Difficulty,Implementation
+
+[TABLE: T14 DirectML Compatibility Report]
+Item,Status,Details,Resolution
+
+[TABLE: T15 Reproducibility Checklist]
+Item,Status,Details
+
+[TABLE: T16 Journal Alignment Checklist]
+Requirement,Pattern_Recognition,Neural_Networks,Engineering_Applications_AI,TGRS_Rigor,Implemented,Evidence_File
+
+[TABLE: T17 Training Time Summary]
+Model,Epochs,Best_Epoch,Train_Time_Min,Avg_Epoch_Time_Sec
+
+[TABLE: T18 Model Ranking Summary]
+Rank,Model,Accuracy,Macro_F1,ECE,Robustness_Avg_Accuracy,Latency_ms,Overall_Comment
+
+[TABLE: T19 Best Model Summary]
+Item,Value
+
+[PROPOSED CONTRIBUTIONS]
+Write 5 paper-ready contributions based on the implemented method and actual results.
+
+[METHODOLOGY SUMMARY]
+Write a concise paper-ready methodology summary.
+
+[KEY FINDINGS]
+Write key findings from actual results only.
+
+[ABLATION INTERPRETATION]
+Write interpretation based on actual ablation results.
+
+[CALIBRATION INTERPRETATION]
+Write interpretation based on ECE, Brier, NLL.
+
+[ROBUSTNESS INTERPRETATION]
+Write interpretation based on corruption results.
+
+[EXPLAINABILITY INTERPRETATION]
+Write interpretation based on saved attention/Grad-CAM figures.
+
+[DIRECTML LIMITATIONS]
+Write honest limitations of DirectML execution, including speed, unsupported operations, and recommendation to repeat final experiments on CUDA lab GPUs.
+
+[GENERAL LIMITATIONS]
+Write honest scientific limitations.
+
+[FUTURE WORK]
+Include:
+- larger defense datasets
+- aerial/SAR validation
+- open-set recognition
+- domain adaptation
+- uncertainty estimation
+- deployment optimization
+- external validation
+
+[REFERENCES]
+Include IEEE-style references for:
+- ResNet
+- DenseNet
+- MobileNetV3
+- EfficientNetV2
+- ConvNeXtV2
+- ViT
+- DeiT
+- Swin Transformer
+- MaxViT
+- DINOv2
+- CLIP
+- SigLIP
+- Vision GNN
+- Graph Attention Networks
+- Focal Loss
+- Supervised Contrastive Learning
+- Calibration of modern neural networks
+- SAM optimizer
+- Grad-CAM
+- MixUp
+- CutMix
+- RandAugment
+- PyTorch DirectML
+
+============================================================
+SECTION 20: PDF REPORT
+============================================================
+
+Generate:
+
+ALL_RESULTS_CONSOLIDATED.pdf
+
+PDF must include:
+
+1. Title page
+2. Abstract-style summary
+3. DirectML environment summary
+4. Dataset summary
+5. Journal alignment summary
+6. Methodology overview
+7. Proposed MilGraph-CalibNet architecture
+8. Model list
+9. Training setup
+10. Main results table
+11. Per-class performance
+12. Confusion matrix
+13. Ablation study
+14. Calibration analysis
+15. Robustness analysis
+16. Efficiency comparison
+17. Statistical significance testing
+18. Explainability results
+19. Model failures and warnings
+20. DirectML limitations
+21. Suggested improvements
+22. Future work
+23. References
+
+Use:
+- reportlab or fpdf2
+
+If PDF generation fails:
+- save reports/ALL_RESULTS_CONSOLIDATED_REPORT_FALLBACK.txt
+- record failure
+- continue ZIP creation
+
+============================================================
+SECTION 21: JSON OUTPUT
+============================================================
+
+Create:
+
+ALL_RESULTS_CONSOLIDATED.json
+
+Include:
+- config
+- environment
+- dataset summary
+- class names
+- split summary
+- model results
+- per-class results
+- ablation results
+- calibration results
+- robustness results
+- statistical tests
+- error analysis
+- warnings/failures
+- journal alignment
+- output file paths
+
+============================================================
+SECTION 22: CSV OUTPUT
+============================================================
+
+Create:
+
+ALL_RESULTS_CONSOLIDATED.csv
+
+This should contain main model comparison table.
+
+Also save every individual table as CSV.
+
+============================================================
+SECTION 23: ZIP PACKAGE
+============================================================
+
+Create:
+
+MilGraph_CalibNet_DirectML_Complete_Output.zip
+
+Include:
+- ALL_RESULTS_CONSOLIDATED.txt
+- ALL_RESULTS_CONSOLIDATED.pdf
+- ALL_RESULTS_CONSOLIDATED.json
+- ALL_RESULTS_CONSOLIDATED.csv
+- tables/
+- figures/
+- logs/
+- reports/
+- predictions/
+- explainability/
+- robustness/
+- selected checkpoints if not too large
+
+If checkpoints are too large:
+- include only best model summary and checkpoint paths
+- record this in run summary
+
+============================================================
+SECTION 24: FINAL PRINT OUTPUT
+============================================================
+
+At the end, print exactly:
+
+MilGraph-CalibNet DirectML experiment completed.
+Backend used: DirectML or CPU fallback.
+Saved ALL_RESULTS_CONSOLIDATED.txt
+Saved ALL_RESULTS_CONSOLIDATED.pdf
+Saved ALL_RESULTS_CONSOLIDATED.json
+Saved ALL_RESULTS_CONSOLIDATED.csv
+Saved complete ZIP package.
+Output directory: ./MilGraph_CalibNet_DirectML_Outputs/
+
+Also print:
+- best model name
+- best accuracy
+- best macro-F1
+- best ECE
+- number of successful models
+- number of failed models
+- location of ZIP file
+
+============================================================
+STRICT RULES
+============================================================
+
+The code must:
+- be one single Jupyter Notebook cell
+- be executable
+- be Python + PyTorch
+- use torch-directml for AMD GPU
+- support CPU fallback
+- not use CUDA
+- not use torch.cuda
+- not use torch.cuda.amp
+- not use torch_geometric
+- not fake metrics
+- not invent results
+- not use placeholder TODOs
+- use real training and real evaluation
+- use functions and classes
+- save all requested outputs
+- log failures instead of crashing
+- continue if a model fails
+- support quick test mode
+- support resume from checkpoints
+- produce journal-ready figures and tables
+- produce consolidated TXT, PDF, JSON, CSV, and ZIP
+- honestly report limitations
+- recommend final large-scale rerun on CUDA lab GPUs for publication-grade experiments
+
+============================================================
+FINAL INSTRUCTION
+============================================================
+
+Now write the COMPLETE SINGLE-CELL Jupyter Notebook code only.
+
+Do not write explanations outside the code.
+Do not write pseudo-code.
+Do not leave TODO placeholders.
+Do not fake results.
+Do not omit output saving.
+Do not omit DirectML compatibility.
+Do not omit consolidated TXT and PDF generation.
+Do not omit ablation, calibration, robustness, explainability, and statistical testing.

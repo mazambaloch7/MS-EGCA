@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+   millitary       1.00      0.99      0.99      1281
+       other       0.99      1.00      0.99      1281
+
+    accuracy                           0.99      2562
+   macro avg       0.99      0.99      0.99      2562
+weighted avg       0.99      0.99      0.99      2562

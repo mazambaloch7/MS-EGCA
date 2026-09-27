@@ -1,0 +1,7 @@
+# model_log.txt - per-model completion log (v20.1)
+# format: ISO-time | ID | Name | Acc+/- | F1% | AUC | Params(M) | Latency(ms) | Type
+#--------------------------------------------------------------------------------------------------------------
+2026-08-06T21:12:56.174668Z |   C0 | SqueezeNet 1.1                   | Acc= 95.94% +/- 0.55 | F1= 95.93% | AUC=0.9986 | Params=  0.73M | Lat=  0.9ms | Type=CNN         
+2026-08-06T21:13:23.484393Z |   C1 | ShuffleNetV2 x1.0                | Acc= 97.09% +/- 0.25 | F1= 97.09% | AUC=0.9990 | Params=  1.26M | Lat=  3.3ms | Type=CNN         
+2026-08-06T21:14:29.419362Z |   C2 | MobileNetV2                      | Acc= 98.11% +/- 0.23 | F1= 98.11% | AUC=0.9995 | Params=  2.24M | Lat=  2.7ms | Type=CNN         
+2026-08-06T21:14:52.327829Z |   C3 | MobileNetV3-Small                | Acc= 98.77% +/- 0.08 | F1= 98.77% | AUC=0.9998 | Params=  1.53M | Lat=  2.3ms | Type=CNN         

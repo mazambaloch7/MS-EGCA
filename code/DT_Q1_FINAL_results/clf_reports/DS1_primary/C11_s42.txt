@@ -1,0 +1,16 @@
+                                 precision    recall  f1-score   support
+
+                  Anti-aircraft       0.98      0.88      0.92       424
+Armored combat support vehicles       0.93      0.91      0.92       424
+     Armored personnel carriers       0.99      0.83      0.90       424
+     Infantry fighting vehicles       0.99      0.72      0.84       424
+         Light armored vehicles       0.97      0.81      0.88       424
+        Mine-protected vehicles       0.96      0.97      0.96       424
+        Prime movers and trucks       0.99      0.93      0.96       424
+       Self-propelled artillery       0.81      0.99      0.89       424
+         light utility vehicles       0.71      1.00      0.83       424
+                          tanks       0.84      0.96      0.90       424
+
+                       accuracy                           0.90      4240
+                      macro avg       0.92      0.90      0.90      4240
+                   weighted avg       0.92      0.90      0.90      4240
